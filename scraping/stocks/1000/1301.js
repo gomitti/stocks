@@ -1,6 +1,6 @@
 module.exports = {
     "code": 1301,
-    "name": "極洋 ",
+    "name": "極洋",
     "parsers": [
         {
             "targets": [
@@ -41,7 +41,7 @@ module.exports = {
                     const $td = $(element).find("td")
                     const date = new Date($($td[0]).find("time").attr("datetime"))
                     const $a = $($td[2]).find("a")
-                    const title = $a.text()
+                    const title = $a.text().trim()
 
                     if (typeof title !== "string") {
                         throw new Error("タイトルを取得できません")

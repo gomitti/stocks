@@ -4,10 +4,12 @@ const axios = require("axios")
 const jschardet = require("jschardet")
 const Iconv = require("iconv").Iconv
 const cheerio = require("cheerio")
+const co = require("co")
+const { argv } = require("yargs")
 
 const request = axios.create({
     "responseType": "arraybuffer",
-    "timeout": 5000,
+    "timeout": 30000,
 })
 
 const ascii_bold = "\u001b[1m"
@@ -29,7 +31,7 @@ const console_bold = text => {
     return `${ascii_bold}${text}${ascii_reset}`
 }
 
-const parse_data = (parser, data) => {
+const parse_data = async (parser, data) => {
     if (parser.format === "jsonp") {
         if (parser.setup_callback) {
             parser.setup_callback()
@@ -40,45 +42,65 @@ const parse_data = (parser, data) => {
     // HTMLを解析
     const $ = cheerio.load(data)
     // スクレイピング
-    return parser.parse($)
+    return await parser.parse($)
+}
+
+const sleep = ms => {
+    return input => {
+        setTimeout(input, ms)
+    };
 }
 
 // 全銘柄のパーサーを読み込み
 fs.readdir("stocks", (err, directories) => {
     directories.forEach(dirname => {
         fs.readdir(`stocks/${dirname}`, (err, filenames) => {
-            filenames.forEach(async filename => {
+            filenames.forEach(filename => {
                 const path = `./stocks/${dirname}/${filename}`
                 const stock = require(path)
-                for (const parser of stock.parsers) {
-                    for (const target_url of parser.targets) {
-                        try {
-                            const response = await request.get(target_url, {
-                                // 文字コードの自動変換
-                                "transformResponse": [
-                                    data => {
-                                        if (parser.transformResponse) {
-                                            // 独自定義の変換処理がある場合
-                                            return parser.transformResponse(data)
-                                        }
-                                        // それ以外はエンコーディングを自動判別してutf-8に変換
-                                        const { encoding } = jschardet.detect(data)
-                                        const iconv = new Iconv(encoding, "UTF-8")
-                                        return iconv.convert(data).toString()
-                                    }
-                                ]
-                            })
-                            const { data } = response
-                            try {
-                                const news = parse_data(parser, data)
-                                console.log(target_url, news.length + "件")
-                            } catch (error) {
-                                console.log(console_bold(stock.code) + " " + console_red_bold(error.toString()))
-                            }
-                        } catch (error) {
-                            console.log(console_bold(stock.code) + " " + console_red_bold(error.toString()))
-                        }
+
+                // 特定の銘柄だけ取得する場合
+                if(argv.code) {
+                    if(stock.code !== parseInt(argv.code)){
+                        return
                     }
+                }
+
+                for (const parser of stock.parsers) {
+                    co(function* () {
+                        for (const target_url of parser.targets) {
+                            request
+                                .get(target_url, {
+                                    // 文字コードの自動変換
+                                    "transformResponse": [
+                                        data => {
+                                            if (parser.transformResponse) {
+                                                // 独自定義の変換処理がある場合
+                                                return parser.transformResponse(data)
+                                            }
+                                            // それ以外はエンコーディングを自動判別してutf-8に変換
+                                            const { encoding } = jschardet.detect(data)
+                                            const iconv = new Iconv(encoding, "UTF-8//IGNORE//TRANSLIT")
+                                            return iconv.convert(data).toString()
+                                        }
+                                    ]
+                                })
+                                .then(async response => {
+                                    const { data } = response
+                                    try {
+                                        const news = await parse_data(parser, data)
+                                        console.log(target_url, news.length + "件")
+                                    } catch (error) {
+                                        console.log(console_bold(stock.code) + " " + console_red_bold(error.toString()))
+                                    }
+                                })
+                                .catch(error => {
+                                    console.log(error)
+                                    console.log(console_bold(stock.code) + " " + console_red_bold(error.toString()) + target_url)
+                                })
+                            yield sleep(1000)
+                        }
+                    })
                 }
             })
         })

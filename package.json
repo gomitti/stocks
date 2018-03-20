@@ -19,7 +19,9 @@
   "dependencies": {
     "axios": "^0.18.0",
     "cheerio": "^1.0.0-rc.2",
+    "co": "^4.6.0",
     "iconv": "^2.3.0",
-    "jschardet": "^1.6.0"
+    "jschardet": "^1.6.0",
+    "yargs": "^11.0.0"
   }
 }

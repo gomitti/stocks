@@ -1,6 +1,6 @@
 module.exports = {
-    "code": 1302,
-    "name": "日水 ",
+    "code": 1332,
+    "name": "日水",
     "parsers": [
         {
             "targets": [
@@ -24,7 +24,7 @@ module.exports = {
                 }
             },
             "format": "jsonp",
-            "parse": data => {
+            "parse": async data => {
                 const { items } = data
                 if (Array.isArray(items) === false) {
                     throw new Error("@itemが配列ではありません")
@@ -34,17 +34,22 @@ module.exports = {
                     const { title, files } = item
                     const date = new Date(item.publishDate)
 
+                    if (Array.isArray(files) === false || files.length === 0) {
+                        continue
+                    }
+                    const file = files[0]
+                    const { url } = file
+
                     if (typeof title !== "string") {
                         throw new Error("タイトルを取得できません")
+                    }
+                    if (typeof url !== "string") {
+                        throw new Error("URLを取得できません")
                     }
                     if (!(date instanceof Date)) {
                         throw new Error("日付を取得できません")
                     }
-                    if (Array.isArray(files) === false || files.length === 0) {
-                        throw new Error("URLを取得できません")
-                    }
-                    const file = files[0]
-                    const { url } = file
+
                     result.push({ url, title, date })
                 }
                 return result
@@ -55,24 +60,24 @@ module.exports = {
                 "http://www.nissui.co.jp/news/index.html"
             ],
             "format": "html",
-            "parse": $ => {
+            "parse": async $ => {
                 const $timelines = $(".timelineList")
                 const result = []
                 $timelines.each((index, element) => {
                     const $root = $(element)
                     const $dt = $root.find("dt")
                     const $dd = $root.find("dd")
-                    if($dt.length !== $dd.length){
+                    if ($dt.length !== $dd.length) {
                         throw new Error("ニュースの件数が不正です")
                     }
-                    for(let i = 0;i < $dt.length;i++){
+                    for (let i = 0; i < $dt.length; i++) {
                         let date_str = $($dt[i]).text()
                         date_str = date_str.replace("年", "/")
                         date_str = date_str.replace("月", "/")
                         date_str = date_str.replace("日", "/")
                         const date = new Date(date_str)
                         const $a = $($dd[i]).find("a")
-                        const title = $a.text()
+                        const title = $a.text().trim()
 
                         if (typeof title !== "string") {
                             throw new Error("タイトルを取得できません")

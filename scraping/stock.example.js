@@ -20,7 +20,8 @@ module.exports = {
             // パース処理を書く
             // https://github.com/cheeriojs/cheerio
             // 記事タイトルとURLの辞書を配列に入れたものを返すようにする
-            "parse": $ => {
+            // 非同期処理が含まれる場合があるかもしれないので念のためasync関数にする
+            "parse": async $ => {
                 return []
             },
 

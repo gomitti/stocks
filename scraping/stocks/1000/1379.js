@@ -1,15 +1,15 @@
 module.exports = {
-    "code": 5758,
-    "name": "FCM",
+    "code": 1379,
+    "name": "ホクト",
     "parsers": [
         {
             "targets": [
-                "http://v4.eir-parts.net/V4Public/EIR/5758/ja/announcement/announcement_1.js"
+                "https://ssl4.eir-parts.net/V4Public/EIR/1379/ja/announcement/announcement_8.js"
             ],
             "format": "jsonp",
             "setup_callback": () => {
                 // JSONPの入力をそのまま返す
-                global.eolparts_announcement_1 = data => {
+                global.eolparts_announcement_8 = data => {
                     return data
                 }
             },
