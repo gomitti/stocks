@@ -1,10 +1,10 @@
 module.exports = {
-    "code": 1408,
-    "name": "サムシングHD",
+    "code": 1433,
+    "name": "ベステラ",
     "parsers": [
         {
             "targets": [
-                "http://v4.eir-parts.net/V4Public/EIR/1408/ja/announcement/announcement_1.js"
+                "https://ssl4.eir-parts.net/V4Public/EIR/1433/ja/announcement/announcement_1.js"
             ],
             "format": "jsonp",
             "setup_callback": () => {
@@ -24,9 +24,6 @@ module.exports = {
 
                     if (typeof item.title !== "string") {
                         throw new Error("タイトルを取得できません")
-                    }
-                    if (typeof item.link !== "string") {
-                        throw new Error("URLを取得できません")
                     }
                     if (!(date instanceof Date)) {
                         throw new Error("日付を取得できません")

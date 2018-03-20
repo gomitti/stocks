@@ -1,42 +1,46 @@
 module.exports = {
-    "code": 1408,
-    "name": "サムシングHD",
+    "code": 1439,
+    "name": "安江工務店",
     "parsers": [
         {
             "targets": [
-                "http://v4.eir-parts.net/V4Public/EIR/1408/ja/announcement/announcement_1.js"
+                "http://www.xj-storage.jp/public-list/GetList.aspx?company=AS08489&fdate=20181231&pdate=20180101&len=10000&output=json&callback=callback",
+                "http://www.xj-storage.jp/public-list/GetList.aspx?company=AS08489&fdate=20171231&pdate=20170101&len=10000&output=json&callback=callback",
             ],
             "format": "jsonp",
             "setup_callback": () => {
                 // JSONPの入力をそのまま返す
-                global.eolparts_announcement_1 = data => {
+                global.callback = data => {
                     return data
                 }
             },
             "parse": async data => {
-                const items = data.item
+                const { items } = data
                 if (Array.isArray(items) === false) {
                     throw new Error("ニュースを取得できません")
                 }
                 const result = []
                 for (const item of items) {
-                    const date = new Date(item.date)
+                    const { title, files } = item
+                    const date = new Date(item.publishDate)
 
-                    if (typeof item.title !== "string") {
+                    if (Array.isArray(files) === false || files.length === 0) {
+                        continue
+                    }
+                    const file = files[0]
+                    const { url } = file
+
+                    if (typeof title !== "string") {
                         throw new Error("タイトルを取得できません")
                     }
-                    if (typeof item.link !== "string") {
+                    if (typeof url !== "string") {
                         throw new Error("URLを取得できません")
                     }
                     if (!(date instanceof Date)) {
                         throw new Error("日付を取得できません")
                     }
 
-                    result.push({
-                        "title": item.title,
-                        "url": item.link,
-                        date
-                    })
+                    result.push({ url, title, date })
                 }
                 return result
             }

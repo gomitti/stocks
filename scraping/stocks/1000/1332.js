@@ -27,7 +27,7 @@ module.exports = {
             "parse": async data => {
                 const { items } = data
                 if (Array.isArray(items) === false) {
-                    throw new Error("@itemが配列ではありません")
+                    throw new Error("ニュースを取得できません")
                 }
                 const result = []
                 for (const item of items) {

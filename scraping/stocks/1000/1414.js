@@ -26,13 +26,13 @@ module.exports = {
             "parse": async data => {
                 const { items } = data
                 if (Array.isArray(items) === false) {
-                    throw new Error("@itemが配列ではありません")
+                    throw new Error("ニュースを取得できません")
                 }
                 const result = []
                 for (const item of items) {
                     const { title, files } = item
                     const date = new Date(item.publishDate)
-                    
+
                     if (Array.isArray(files) === false || files.length === 0) {
                         continue
                     }
