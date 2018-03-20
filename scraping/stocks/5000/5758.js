@@ -3,9 +3,11 @@ module.exports = {
     "name": "FCM",
     "parsers": [
         {
-            "target": "http://v4.eir-parts.net/V4Public/EIR/5758/ja/announcement/announcement_1.js",
+            "targets": [
+                "http://v4.eir-parts.net/V4Public/EIR/5758/ja/announcement/announcement_1.js"
+            ],
             "format": "jsonp",
-            "before": () => {
+            "setup_callback": () => {
                 // JSONPの入力をそのまま返す
                 global.eolparts_announcement_1 = data => {
                     return data
@@ -14,14 +16,23 @@ module.exports = {
             "parse": data => {
                 const items = data.item
                 if (Array.isArray(items) === false) {
-                    throw new Error("@itemが配列ではあり前ん")
+                    throw new Error("@itemが配列ではありません")
                 }
                 const result = []
-                for (const news of items) {
-                    const { title, link } = news
+                for (const item of items) {
+                    const date = new Date(item.date)
+
+                    if (typeof item.title !== "string") {
+                        throw new Error("タイトルを取得できません")
+                    }
+                    if (!(date instanceof Date)) {
+                        throw new Error("日付を取得できません")
+                    }
+
                     result.push({
-                        title,
-                        "url": link
+                        "title": item.title,
+                        "url": item.link,
+                        date
                     })
                 }
                 return result

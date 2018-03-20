@@ -10,10 +10,11 @@ module.exports = {
             // html, jsonpなど
             "format": "html",
 
-            // パース処理前に何かを実行する場合
-            // 例えばJSONPの関数を定義しておく等
-            before: () => {
-
+            // JSONPの関数を定義
+            setup_callback: () => {
+                global.callback = data => {
+                    return data
+                }
             },
 
             // パース処理を書く
