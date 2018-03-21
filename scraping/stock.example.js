@@ -3,8 +3,10 @@ module.exports = {
     "name": "Campany Name",     // 社名
     "parsers": [                // パーサー
         {
-            // パースするURL
-            "target": "http://www.fc-m.co.jp/ir/news.html",
+            // 対象のURL
+            "targets": [
+                "http://example.com"
+            ],
 
             // 対象URLのフォーマット
             // html, jsonpなど
