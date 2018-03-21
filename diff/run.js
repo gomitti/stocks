@@ -2,10 +2,10 @@ const fs = require("fs")
 const path = require("path")
 const axios = require("axios")
 const jschardet = require("jschardet")
-const co = require("co")
-const { argv } = require("yargs")
+const iconv = require("iconv-lite")
 const { MongoClient } = require("mongodb")
 const crypto = require("crypto")
+const { argv } = require("yargs")
 
 const request = axios.create({
     "responseType": "arraybuffer",
@@ -41,7 +41,6 @@ const db_url = "mongodb://localhost:27017"
 const db_name = "diff"
 
 MongoClient.connect(db_url, function (err, client) {
-    console.log(console_green_bold("MongoDBに接続しました"))
     const db = client.db(db_name)
 
     // 全銘柄を読み込み
@@ -58,52 +57,60 @@ MongoClient.connect(db_url, function (err, client) {
                             return
                         }
                     }
-                    co(function* () {
-                        for (const target_url of stock.targets) {
-                            request
-                                .get(target_url)
-                                .then(async response => {
-                                    const new_data = response.data
-                                    const new_hash = crypto.createHash("md5").update(new_data).digest("base64")
-                                    try {
-                                        const collection = db.collection("stocks")
-                                        const result = await collection.findOne({ "code": stock.code, "url": target_url })
-                                        if (result === null) {
-                                            await collection.insertOne({
-                                                "code": stock.code,
-                                                "url": target_url,
-                                                "hash": new_hash
-                                            })
-                                            return
-                                        }
 
-                                        const old_hash = result.hash
-                                        await collection.update(
-                                            {
-                                                "code": stock.code,
-                                                "url": target_url
-                                            }, {
-                                                "code": stock.code,
-                                                "url": target_url,
-                                                "hash": new_hash
-                                            }
-                                        )
-
-                                        if(old_hash !== new_hash){
-                                            console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${old_hash} -> ${console_green_bold(new_hash)}`)
-                                        }else{
-                                            console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${new_hash}`)
-                                        }
-                                    } catch (error) {
-                                        console.log(console_cyan_bold(stock.code) + " " + console_red_bold(error.toString()))
-                                    }
-                                })
-                                .catch(error => {
-                                    console.log(console_cyan_bold(stock.code) + " " + console_red_bold(error.toString()) + target_url)
-                                })
-                            yield sleep(1000)
+                    for (const target_url of stock.targets) {
+                        if (target_url.indexOf("http") !== 0) {
+                            continue
                         }
-                    })
+                        request
+                            .get(target_url, {
+                                // 文字コードの自動変換
+                                "transformResponse": [
+                                    data => {
+                                        const { encoding } = jschardet.detect(data)
+                                        let html = iconv.decode(data, encoding, "UTF-8//IGNORE//TRANSLIT")
+                                        html = html.replace(/<!--(.+?)-->/g, "")
+                                        return html
+                                    }
+                                ]
+                            })
+                            .then(async response => {
+                                const new_data = response.data
+                                const new_hash = crypto.createHash("md5").update(new_data).digest("base64")
+                                const collection = db.collection("stocks")
+                                const result = await collection.findOne({ "code": stock.code, "url": target_url })
+                                if (result === null) {
+                                    await collection.insertOne({
+                                        "code": stock.code,
+                                        "url": target_url,
+                                        "hash": new_hash
+                                    })
+                                    return
+                                }
+
+                                const old_hash = result.hash
+                                await collection.update(
+                                    {
+                                        "code": stock.code,
+                                        "url": target_url
+                                    }, {
+                                        "code": stock.code,
+                                        "url": target_url,
+                                        "hash": new_hash
+                                    }
+                                )
+
+                                if (old_hash !== new_hash) {
+                                    console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${old_hash} -> ${console_green_bold(new_hash)}`)
+                                } else {
+                                    console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${new_hash}`)
+                                }
+
+                            })
+                            .catch(error => {
+                                console.loÏg(console_cyan_bold(stock.code) + " " + console_red_bold(error.toString()) + target_url)
+                            })
+                    }
                 })
             })
         })
