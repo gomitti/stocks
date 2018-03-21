@@ -2,7 +2,8 @@ const fs = require("fs")
 const path = require("path")
 const axios = require("axios")
 const jschardet = require("jschardet")
-const Iconv = require("iconv").Iconv
+// const Iconv = require("iconv").Iconv
+const iconv = require("iconv-lite")
 const cheerio = require("cheerio")
 const co = require("co")
 const { argv } = require("yargs")
@@ -80,8 +81,9 @@ fs.readdir("stocks", (err, directories) => {
                                             }
                                             // それ以外はエンコーディングを自動判別してutf-8に変換
                                             const { encoding } = jschardet.detect(data)
-                                            const iconv = new Iconv(encoding, "UTF-8//IGNORE//TRANSLIT")
-                                            return iconv.convert(data).toString()
+                                            // const iconv = new Iconv(encoding, "UTF-8//IGNORE//TRANSLIT")
+                                            // return iconv.convert(data).toString()
+                                            return iconv.decode(data, encoding, "UTF-8//IGNORE//TRANSLIT")
                                         }
                                     ]
                                 })

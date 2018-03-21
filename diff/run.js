@@ -2,7 +2,6 @@ const fs = require("fs")
 const path = require("path")
 const axios = require("axios")
 const jschardet = require("jschardet")
-const Iconv = require("iconv").Iconv
 const co = require("co")
 const { argv } = require("yargs")
 const { MongoClient } = require("mongodb")
