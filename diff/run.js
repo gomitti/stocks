@@ -80,7 +80,7 @@ MongoClient.connect(db_url, function (err, client) {
                                         html = html.replace(/<!--.+?-->/g, "")
                                         // javascriptは消す
                                         html = html.replace(/<script[\s\S]+<\/script>/mg, "")
-                                        return html
+                                        return html.trim()
                                     }
                                 ]
                             })
