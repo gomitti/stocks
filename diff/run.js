@@ -6,6 +6,7 @@ const iconv = require("iconv-lite")
 const { MongoClient } = require("mongodb")
 const crypto = require("crypto")
 const { argv } = require("yargs")
+const jsdiff = require("diff")
 
 const request = axios.create({
     "responseType": "arraybuffer",
@@ -69,26 +70,36 @@ MongoClient.connect(db_url, function (err, client) {
                                     data => {
                                         const { encoding } = jschardet.detect(data)
                                         let html = iconv.decode(data, encoding, "UTF-8//IGNORE//TRANSLIT")
-                                        html = html.replace(/<!--(.+?)-->/g, "")
+                                        // タブを消す
+                                        html = html.replace(/\t/g, "")
+                                        // スペースの連続を消す
+                                        html = html.replace(/ {2,}/g, "")
+                                        // 開業の連続を消す
+                                        html = html.replace(/\n{2,}/g, "\n")
+                                        // CDNのキャッシュの時刻などの不要な情報が入っていることがあるので削る
+                                        html = html.replace(/<!--.+?-->/g, "")
+                                        // javascriptは消す
+                                        html = html.replace(/<script[\s\S]+<\/script>/mg, "")
                                         return html
                                     }
                                 ]
                             })
                             .then(async response => {
-                                const new_data = response.data
-                                const new_hash = crypto.createHash("md5").update(new_data).digest("base64")
+                                const new_html = response.data
+                                const new_hash = crypto.createHash("md5").update(new_html).digest("base64")
                                 const collection = db.collection("stocks")
                                 const result = await collection.findOne({ "code": stock.code, "url": target_url })
                                 if (result === null) {
                                     await collection.insertOne({
                                         "code": stock.code,
                                         "url": target_url,
-                                        "hash": new_hash
+                                        "hash": new_hash,
+                                        "html": new_html
                                     })
+                                    console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${new_hash}`)
                                     return
                                 }
 
-                                const old_hash = result.hash
                                 await collection.update(
                                     {
                                         "code": stock.code,
@@ -96,11 +107,23 @@ MongoClient.connect(db_url, function (err, client) {
                                     }, {
                                         "code": stock.code,
                                         "url": target_url,
-                                        "hash": new_hash
+                                        "hash": new_hash,
+                                        "html": new_html
                                     }
                                 )
-
+                                
+                                const old_hash = result.hash
                                 if (old_hash !== new_hash) {
+                                    const old_html = result.html
+                                    const diff = jsdiff.diffLines(old_html, new_html)
+                                    diff.forEach(part => {
+                                        if (part.added) {
+                                            console.log(console_green_bold(`+${part.value}`))
+                                        }
+                                        if (part.removed) {
+                                            console.log(console_red_bold(`-${part.value}`))
+                                        }
+                                    })
                                     console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${old_hash} -> ${console_green_bold(new_hash)}`)
                                 } else {
                                     console.log(`${console_cyan_bold(stock.code)} ${console_bold(target_url)} ${new_hash}`)
@@ -108,7 +131,7 @@ MongoClient.connect(db_url, function (err, client) {
 
                             })
                             .catch(error => {
-                                console.loÏg(console_cyan_bold(stock.code) + " " + console_red_bold(error.toString()) + target_url)
+                                console.log(console_cyan_bold(stock.code) + " " + console_red_bold(error.toString()) + target_url)
                             })
                     }
                 })
