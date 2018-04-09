@@ -3,6 +3,5 @@ module.exports = {
     "name": "山九",
     "targets": [
         "http://www.sankyu.co.jp/news/index.html",
-        "",
     ],
 }
