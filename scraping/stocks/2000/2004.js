@@ -1,22 +1,13 @@
+const gen = require('../../urlgen').urlGen
 const root = 'http://www.showa-sangyo.co.jp'
+const oldest = 2009
+const formatFunc = year => `${root}/corporate/news/index.html?y=${year}`
 
-const gen = () => {
-  /*
-   * "http://www.showa-sangyo.co.jp/corporate/news/index.html?y=YYYY"が取得元になる
-   */
-  const now = (new Date()).getFullYear()
-  const oldest = 2007
-
-  return Array.from(Array(now - oldest + 1).keys())
-    .map(i => {
-      return `${root}/corporate/news/index.html?y=${oldest + i}`
-    })
-}
 module.exports = {
   'code': 2004,
   'name': '昭和産',
   'parsers': [{
-    'targets': gen(),
+    'targets': gen(oldest, formatFunc),
     'format': 'html',
     'parse': $ => {
       const result = []
@@ -25,11 +16,11 @@ module.exports = {
       $array.each((index, elem) => {
         const $link = $(elem).find('p[class=tx] > a')
         const date = new Date(Date.parse($(elem).find('p[class=date]').text().trim()))
+        if (!(date instanceof Date)) { throw new Error('日付を取得できません') }
         const url = `${root}${$link.attr('href')}`
         const title = $link.text().replace(/（[0-9]+KB）/, '').trim()
-        const item = { title, url, date }
-        console.log(item.date)
-        result.push(item)
+        if (typeof title !== 'string') { throw new Error('タイトルを取得できません') }
+        result.push({ title, url, date })
       })
       return result
     }

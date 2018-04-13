@@ -1,40 +1,32 @@
-const gen = () => {
-  /*
-    "https://www.nisshin.com/company/release/YYYY/"が取得元になる
-    */
-  const now = (new Date()).getFullYear()
-  const oldest = 2000
-  const root = 'https://www.nisshin.com/company/release'
-  return Array.from(Array(now - oldest + 1).keys())
-    .map(i => {
-      return `${root}/${oldest + i}/`
-    })
-}
+const gen = require("../../urlgen").urlGen
+const root = 'https://www.nisshin.com'
+const oldest = 2000
+const formatFunc = year => `${root}/company/release/${year}/`
 
 module.exports = {
   'code': 2002,
   'name': '日清粉G',
   'parsers': [{
-    'targets': gen(),
+    'targets': gen(oldest, formatFunc),
     'format': 'html',
     'parse': $ => {
       const result = []
-      const root = 'https://www.nisshin.com'
-      $('ul[class=c-release-list__items] > li').each(function () {
+
+      $('ul[class=c-release-list__items] > li').each(function() {
         const $elem = $(this).find('a')
 
         /* __dateクラスのcontentに"yyyy年 M月 d日"の形式で
-                 * 日付のテキストが保持されているのでパースする
-                */
+         * 日付のテキストが保持されているのでパースする
+         */
 
         let arrDate = $elem.find('span[class=__date]')
           .text()
-          .match(/[0-9]+/g).map(function (elem) {
+          .match(/[0-9]+/g).map(function(elem) {
             return parseInt(elem, 10)
           })
 
         if (arrDate.length !== 3 ||
-                    arrDate.filter(elem => { return !isFinite(elem) }).length > 0) {
+          arrDate.filter(elem => { return !isFinite(elem) }).length > 0) {
           throw new Error('日付を取得できません')
         }
         // monthが0-11なので調整
