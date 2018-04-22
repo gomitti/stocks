@@ -84,7 +84,7 @@ MongoClient.connect(db_url, async (err, client) => {
                                     // キャッシュの時刻などの不要な情報が入っていることがあるので削る
                                     html = html.replace(/<!--.+?-->/g, "")
                                     // 余計なタグは消す
-                                    html = html.replace(/<script[\s\S]+<\/script>/mg, "")
+                                    html = html.replace(/<script[\s\S]+?<\/script>/mg, "")
                                     html = html.replace(/<head[\s\S]+<\/head>/mg, "")
                                     // 改行の連続を消す
                                     html = html.replace(/\n{2,}/g, "\n")
